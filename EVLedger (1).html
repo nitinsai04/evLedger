@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#0B0E11">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EV Ledger">
+<title>EV Ledger</title>
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAIAAADdvvtQAAACHUlEQVR42u3awQmAQBAEQf+CYILGZ2TGYQoiwtFnQUcwFPvaZd126XWLCQSQABJAAkgCSAAJIAEkASSABJAAkgASQAJIAEkACSABJIAEkASQABJAAkgCSAAJIAEkASSABJAAkgASQAJIAAmgqTuu80koAAQQQAABFAXEEEAAAQQQQF1ADAEEEEAAAdQFxBBAAAEEEEBdQAwBBBBAAAHUBcQQQAABBBBAXUAMAQQQQEMBMQQQQAABBFAXEEMAAQQQQAB1ATEEEEAAAQRQFxBDAAEEEEAAdQExBBBAAAEEUBcQQwABBBBAAHUBMQQQQAANBcQQQAABBBBAXUAMAQQQQAAB1AXEEEAAAQQQQF1ADAEEEEAAARQSQxJAAAEEEECTAfqzIYAAAggggOqAfmsIIIAAYggggAACCCCGGAIIIIAAAoghgAACCCCAAGIIIIAAAgggT/UMAQQQQAABxBBDAAEEkEdpgBwhgAACiCGGAAIIIIAAYggggAACCCCAZjAEEEAAAQQQQFFDAAEEEEAAARQ1BBBAAAEEEEBRQwABBBBA4wwBBBBAAAEEUNQQQAABBBBAAEUNAQQQQAABBFDUEEAAAQQQQABFDQEEEEAAAQRQ1BBAAAEEEEAACSABJAEkgASQABJAVhBAAkgACSAJIAEkgASQBJAAEkACSAJIAAkgASQBJIAEkAASQBJAAkgACSAJIAEkgASQBJC+7wYgbTVUeCP/VgAAAABJRU5ErkJggg==">
+<style>
+:root {
+  --bg: #0B0E11;
+  --surface: #15191E;
+  --surface-2: #1C2128;
+  --text: #E8EBED;
+  --text-dim: #7C868F;
+  --border: #262C34;
+  --mint: #5EE6A8;
+  --amber: #FF8A4C;
+  --blue: #7AA2F7;
+  --red: #FF6B6B;
+  --mint-bg: rgba(94,230,168,0.12);
+  --amber-bg: rgba(255,138,76,0.12);
+  --blue-bg: rgba(122,162,247,0.12);
+}
+[data-theme="light"] {
+  --bg: #F5F6F4;
+  --surface: #FFFFFF;
+  --surface-2: #ECEEEC;
+  --text: #1A1D1F;
+  --text-dim: #6B7278;
+  --border: #DDE1DE;
+  --mint-bg: rgba(20,150,100,0.10);
+  --amber-bg: rgba(220,110,40,0.10);
+  --blue-bg: rgba(60,100,200,0.10);
+  --mint: #189168;
+  --amber: #C25E1E;
+  --blue: #3C64C8;
+  --red: #D14343;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+  height: 100%;
+}
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+.mono { font-family: 'JetBrains Mono', 'SF Mono', monospace; }
+button { font-family: inherit; }
+
+header.topbar {
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 20px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 10;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+header.topbar h1 {
+  font-size: 17px; font-weight: 700; margin: 0;
+  letter-spacing: -0.02em;
+}
+header.topbar .sub {
+  font-size: 12px; color: var(--text-dim); margin-top: 2px;
+}
+.theme-toggle {
+  background: var(--surface-2); border: none; border-radius: 10px;
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  color: var(--text); cursor: pointer; font-size: 16px;
+}
+
+main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 20px calc(96px + env(safe-area-inset-bottom, 0px));
+}
+
+.screen { display: none; animation: fadein 0.25s ease; }
+.screen.active { display: block; }
+@keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .screen { animation: none; }
+}
+
+/* ---- Dashboard ---- */
+.hero-card {
+  background: linear-gradient(165deg, var(--surface) 0%, var(--surface-2) 100%);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 28px 24px 24px;
+  margin-bottom: 14px;
+}
+.hero-label {
+  font-size: 12px; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.08em; font-weight: 600; margin-bottom: 10px;
+}
+.hero-value {
+  font-size: 56px; font-weight: 700; line-height: 1;
+  color: var(--mint);
+  display: flex; align-items: baseline; gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.hero-value .unit { font-size: 20px; color: var(--text-dim); font-weight: 500; }
+.hero-digit { display: inline-block; }
+.hero-foot {
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border);
+  font-size: 13px; color: var(--text-dim);
+}
+
+.stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 16px;
+}
+.stat-card .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+.stat-card .value { font-size: 22px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.stat-card.saved .value { color: var(--mint); }
+.stat-card.spent .value { color: var(--amber); }
+
+.chart-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 16px 16px 8px; margin-bottom: 14px;
+}
+.chart-card .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 10px; }
+.chart-wrap { width: 100%; overflow: hidden; }
+.chart-wrap svg { width: 100%; height: auto; display: block; }
+
+.empty-state {
+  text-align: center; padding: 40px 20px; color: var(--text-dim);
+}
+.empty-state .icon { font-size: 32px; margin-bottom: 10px; opacity: 0.6; }
+.empty-state p { font-size: 14px; margin: 0; line-height: 1.5; }
+
+/* ---- Lists ---- */
+.list-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+}
+.list-header h2 { font-size: 20px; font-weight: 700; margin: 0; }
+.add-btn {
+  background: var(--mint); color: #06140D; border: none; border-radius: 12px;
+  width: 38px; height: 38px; font-size: 22px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; line-height: 1;
+}
+[data-theme="light"] .add-btn { color: #FFFFFF; }
+
+.entry-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px 16px; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer;
+}
+.entry-tag {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.entry-tag.home { background: var(--blue); }
+.entry-tag.dc { background: var(--amber); }
+.entry-tag.ac { background: var(--mint); }
+.entry-tag.maint { background: var(--red); }
+.entry-main { flex: 1; min-width: 0; }
+.entry-title { font-size: 14px; font-weight: 600; }
+.entry-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.entry-amount { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
+/* ---- Form sheet ---- */
+.sheet-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 100; display: none; opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.sheet-backdrop.open { display: block; opacity: 1; }
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  z-index: 101;
+  padding: 14px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  max-height: 88vh; overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.28s cubic-bezier(.32,.72,0,1);
+}
+.sheet.open { transform: translateY(0); }
+.sheet-handle {
+  width: 36px; height: 4px; background: var(--border); border-radius: 2px;
+  margin: 0 auto 16px;
+}
+.sheet h3 { font-size: 17px; font-weight: 700; margin: 0 0 16px; }
+.field { margin-bottom: 14px; }
+.field label {
+  display: block; font-size: 12px; color: var(--text-dim); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;
+}
+.field input, .field select {
+  width: 100%; background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 14px; font-size: 16px; color: var(--text);
+  font-family: inherit;
+}
+.field input:focus, .field select:focus { outline: none; border-color: var(--mint); }
+.type-pills { display: flex; gap: 8px; }
+.type-pill {
+  flex: 1; padding: 10px 0; text-align: center; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface-2);
+  font-size: 13px; font-weight: 600; color: var(--text-dim); cursor: pointer;
+}
+.type-pill.selected.home { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+.type-pill.selected.dc { border-color: var(--amber); color: var(--amber); background: var(--amber-bg); }
+.type-pill.selected.ac { border-color: var(--mint); color: var(--mint); background: var(--mint-bg); }
+
+.sheet-actions { display: flex; gap: 10px; margin-top: 18px; }
+.btn {
+  flex: 1; padding: 14px 0; border-radius: 12px; border: none;
+  font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.btn-primary { background: var(--mint); color: #06140D; }
+[data-theme="light"] .btn-primary { color: #FFFFFF; }
+.btn-secondary { background: var(--surface-2); color: var(--text); }
+.btn-danger { background: rgba(255,107,107,0.12); color: var(--red); }
+
+/* ---- Settings ---- */
+.settings-group { margin-bottom: 22px; }
+.settings-group h3 {
+  font-size: 12px; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.06em; font-weight: 700; margin: 0 0 10px;
+}
+.settings-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden;
+}
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-row .row-label { font-size: 14px; font-weight: 500; }
+.settings-row input {
+  background: none; border: none; color: var(--mint); font-size: 15px;
+  text-align: right; font-family: inherit; font-weight: 700; width: 110px;
+  font-variant-numeric: tabular-nums;
+}
+.settings-row input:focus { outline: none; }
+.settings-action-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid var(--border); cursor: pointer;
+}
+.settings-action-row:last-child { border-bottom: none; }
+.settings-action-row .row-label { font-size: 14px; font-weight: 500; }
+.settings-action-row .chev { color: var(--text-dim); }
+
+/* ---- Tab bar ---- */
+nav.tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+  display: flex; justify-content: space-around;
+}
+.tab-btn {
+  background: none; border: none; display: flex; flex-direction: column;
+  align-items: center; gap: 4px; padding: 6px 14px; cursor: pointer;
+  color: var(--text-dim); flex: 1;
+}
+.tab-btn .ti { font-size: 20px; line-height: 1; }
+.tab-btn .tl { font-size: 11px; font-weight: 600; }
+.tab-btn.active { color: var(--mint); }
+
+.toast {
+  position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+  padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 600;
+  z-index: 200; opacity: 0; transition: all 0.25s ease; pointer-events: none;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body data-theme="dark">
+
+<header class="topbar">
+  <div>
+    <h1 id="vehicleNameHeader">EV Ledger</h1>
+    <div class="sub" id="odoSub">—</div>
+  </div>
+  <button class="theme-toggle" id="themeToggle">🌙</button>
+</header>
+
+<main>
+  <!-- DASHBOARD -->
+  <section class="screen active" id="screen-dashboard">
+    <div class="hero-card">
+      <div class="hero-label">Cost per kilometer</div>
+      <div class="hero-value mono"><span class="unit">₹</span><span id="heroCostKm">0.00</span><span class="unit">/km</span></div>
+      <div class="hero-foot" id="heroFoot">Log a charge to see your real running cost.</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card spent">
+        <div class="label">Total spent</div>
+        <div class="value mono" id="statSpent">₹0</div>
+      </div>
+      <div class="stat-card saved">
+        <div class="label">Saved vs i20</div>
+        <div class="value mono" id="statSaved">₹0</div>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="label">Total km driven</div>
+        <div class="value mono" id="statKm">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Total kWh added</div>
+        <div class="value mono" id="statKwh">0</div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="label">Savings over time</div>
+      <div class="chart-wrap" id="chartWrap"></div>
+    </div>
+  </section>
+
+  <!-- CHARGES -->
+  <section class="screen" id="screen-charges">
+    <div class="list-header">
+      <h2>Charges</h2>
+      <button class="add-btn" id="addChargeBtn">+</button>
+    </div>
+    <div id="chargesList"></div>
+  </section>
+
+  <!-- MAINTENANCE -->
+  <section class="screen" id="screen-maintenance">
+    <div class="list-header">
+      <h2>Maintenance</h2>
+      <button class="add-btn" id="addMaintBtn">+</button>
+    </div>
+    <div id="maintList"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="screen" id="screen-settings">
+    <div class="list-header"><h2>Settings</h2></div>
+
+    <div class="settings-group">
+      <h3>Vehicle</h3>
+      <div class="settings-card">
+        <div class="settings-row"><span class="row-label">Vehicle name</span><input type="text" id="setVehicleName"></div>
+        <div class="settings-row"><span class="row-label">Battery capacity (kWh)</span><input type="number" id="setBattery" inputmode="decimal"></div>
+        <div class="settings-row"><span class="row-label">Starting odometer (km)</span><input type="number" id="setStartOdo" inputmode="decimal"></div>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <h3>Petrol comparison (Hyundai i20)</h3>
+      <div class="settings-card">
+        <div class="settings-row"><span class="row-label">i20 mileage (km/l)</span><input type="number" id="setMileage" inputmode="decimal"></div>
+        <div class="settings-row"><span class="row-label">Petrol price (₹/l)</span><input type="number" id="setPetrolPrice" inputmode="decimal"></div>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <h3>App</h3>
+      <div class="settings-card">
+        <div class="settings-action-row" id="exportBtn"><span class="row-label">Export data as CSV</span><span class="chev">›</span></div>
+        <div class="settings-action-row" id="resetBtn"><span class="row-label" style="color:var(--red)">Erase all data</span><span class="chev">›</span></div>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <p style="font-size:12px; color:var(--text-dim); text-align:center; line-height:1.6;">EV Ledger · stored only on this device<br>Add to Home Screen for full-screen use</p>
+    </div>
+  </section>
+</main>
+
+<nav class="tabbar">
+  <button class="tab-btn active" data-screen="dashboard"><span class="ti">◆</span><span class="tl">Dashboard</span></button>
+  <button class="tab-btn" data-screen="charges"><span class="ti">⚡</span><span class="tl">Charges</span></button>
+  <button class="tab-btn" data-screen="maintenance"><span class="ti">🔧</span><span class="tl">Maintenance</span></button>
+  <button class="tab-btn" data-screen="settings"><span class="ti">⚙</span><span class="tl">Settings</span></button>
+</nav>
+
+<!-- CHARGE FORM SHEET -->
+<div class="sheet-backdrop" id="chargeBackdrop"></div>
+<div class="sheet" id="chargeSheet">
+  <div class="sheet-handle"></div>
+  <h3 id="chargeSheetTitle">Add charge</h3>
+  <input type="hidden" id="chargeEditId">
+  <div class="field">
+    <label>Charge type</label>
+    <div class="type-pills" id="chargeTypePills">
+      <div class="type-pill home" data-type="home">Home</div>
+      <div class="type-pill dc" data-type="dc">DC Fast</div>
+      <div class="type-pill ac" data-type="ac">Public AC</div>
+    </div>
+  </div>
+  <div class="field"><label>Date</label><input type="date" id="chargeDate"></div>
+  <div class="field"><label>Odometer (km)</label><input type="number" id="chargeOdo" inputmode="decimal" placeholder="e.g. 4210"></div>
+  <div class="field" id="chargeTripPreviewField" style="display:none;">
+    <label>Trip since last charge</label>
+    <div id="chargeTripPreview" class="mono" style="font-size:15px; color:var(--mint); padding:4px 0;">—</div>
+  </div>
+  <div class="field"><label>kWh added</label><input type="number" id="chargeKwh" inputmode="decimal" placeholder="e.g. 28.4"></div>
+  <div class="field"><label>Cost (₹)</label><input type="number" id="chargeCost" inputmode="decimal" placeholder="e.g. 312"></div>
+  <div class="field" id="chargeOdoError" style="display:none; color:var(--red); font-size:13px; margin-top:-6px;"></div>
+  <div class="sheet-actions">
+    <button class="btn btn-danger" id="chargeDeleteBtn" style="display:none;">Delete</button>
+    <button class="btn btn-secondary" id="chargeCancelBtn">Cancel</button>
+    <button class="btn btn-primary" id="chargeSaveBtn">Save</button>
+  </div>
+</div>
+
+<!-- MAINTENANCE FORM SHEET -->
+<div class="sheet-backdrop" id="maintBackdrop"></div>
+<div class="sheet" id="maintSheet">
+  <div class="sheet-handle"></div>
+  <h3 id="maintSheetTitle">Add maintenance</h3>
+  <input type="hidden" id="maintEditId">
+  <div class="field"><label>Date</label><input type="date" id="maintDate"></div>
+  <div class="field"><label>Odometer (km)</label><input type="number" id="maintOdo" inputmode="decimal" placeholder="e.g. 4210"></div>
+  <div class="field"><label>What was done</label><input type="text" id="maintDesc" placeholder="e.g. Tyre rotation, brake pads"></div>
+  <div class="field"><label>Cost (₹)</label><input type="number" id="maintCost" inputmode="decimal" placeholder="e.g. 1200"></div>
+  <div class="sheet-actions">
+    <button class="btn btn-danger" id="maintDeleteBtn" style="display:none;">Delete</button>
+    <button class="btn btn-secondary" id="maintCancelBtn">Cancel</button>
+    <button class="btn btn-primary" id="maintSaveBtn">Save</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  "use strict";
+
+  const STORAGE_KEY = "evledger_data_v2";
+
+  const defaultData = {
+    settings: {
+      vehicleName: "eVitara",
+      battery: 49,
+      mileage: 11,
+      petrolPrice: 105,
+      startOdo: 0,
+      theme: "dark"
+    },
+    charges: [],
+    maintenance: []
+  };
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return JSON.parse(JSON.stringify(defaultData));
+      const parsed = JSON.parse(raw);
+      return Object.assign(JSON.parse(JSON.stringify(defaultData)), parsed, {
+        settings: Object.assign({}, defaultData.settings, parsed.settings || {})
+      });
+    } catch (e) {
+      return JSON.parse(JSON.stringify(defaultData));
+    }
+  }
+
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  let state = load();
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  function fmtMoney(n) {
+    n = Math.round(n);
+    return "₹" + n.toLocaleString("en-IN");
+  }
+  function fmtNum(n, d) {
+    return Number(n).toLocaleString("en-IN", { maximumFractionDigits: d || 0, minimumFractionDigits: 0 });
+  }
+
+  // ---------- THEME ----------
+  function applyTheme() {
+    document.body.setAttribute("data-theme", state.settings.theme);
+    document.getElementById("themeToggle").textContent = state.settings.theme === "dark" ? "🌙" : "☀️";
+    const meta = document.querySelector('meta[name="theme-color"]');
+    meta.setAttribute("content", state.settings.theme === "dark" ? "#0B0E11" : "#F5F6F4");
+  }
+  document.getElementById("themeToggle").addEventListener("click", function() {
+    state.settings.theme = state.settings.theme === "dark" ? "light" : "dark";
+    save(); applyTheme(); renderChart();
+  });
+
+  // ---------- TABS ----------
+  const screens = document.querySelectorAll(".screen");
+  const tabs = document.querySelectorAll(".tab-btn");
+  tabs.forEach(function(tab) {
+    tab.addEventListener("click", function() {
+      const target = tab.getAttribute("data-screen");
+      screens.forEach(function(s) { s.classList.toggle("active", s.id === "screen-" + target); });
+      tabs.forEach(function(t) { t.classList.toggle("active", t === tab); });
+      if (target === "settings") renderSettings();
+    });
+  });
+
+  // ---------- TOAST ----------
+  function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(function() { t.classList.remove("show"); }, 1800);
+  }
+
+  // ---------- CALCULATIONS ----------
+  // ---------- TRIP COMPUTATION (odometer-derived) ----------
+  // Trip distance for each charge = this charge's odo - previous charge's odo (chronologically),
+  // or - startingOdometer for the very first charge.
+  function computeTrips() {
+    const sorted = state.charges.slice().sort(function(a,b) {
+      return a.date.localeCompare(b.date) || (Number(a.odo) - Number(b.odo));
+    });
+    let prevOdo = Number(state.settings.startOdo) || 0;
+    return sorted.map(function(c) {
+      const odo = Number(c.odo) || 0;
+      const trip = Math.max(0, odo - prevOdo);
+      prevOdo = odo;
+      return Object.assign({}, c, { trip: trip });
+    });
+  }
+
+  function getTotals() {
+    const charges = computeTrips();
+    let totalKm = 0, totalKwh = 0, totalSpent = 0;
+    charges.forEach(function(c) {
+      totalKm += Number(c.trip) || 0;
+      totalKwh += Number(c.kwh) || 0;
+      totalSpent += Number(c.cost) || 0;
+    });
+    const maintSpent = state.maintenance.reduce(function(a, m) { return a + (Number(m.cost) || 0); }, 0);
+    const costPerKm = totalKm > 0 ? totalSpent / totalKm : 0;
+    const i20CostPerKm = state.settings.petrolPrice / state.settings.mileage;
+    const i20EquivCost = totalKm * i20CostPerKm;
+    const saved = i20EquivCost - totalSpent;
+    return { totalKm, totalKwh, totalSpent, maintSpent, costPerKm, i20CostPerKm, saved, i20EquivCost };
+  }
+
+  // ---------- DASHBOARD RENDER ----------
+  function renderDashboard() {
+    const t = getTotals();
+    document.getElementById("vehicleNameHeader").textContent = state.settings.vehicleName || "EV Ledger";
+    const lastOdo = getLastOdometer();
+    document.getElementById("odoSub").textContent = lastOdo ? fmtNum(lastOdo) + " km on the clock" : "No entries yet";
+
+    document.getElementById("heroCostKm").textContent = t.costPerKm.toFixed(2);
+    document.getElementById("statSpent").textContent = fmtMoney(t.totalSpent);
+    document.getElementById("statSaved").textContent = fmtMoney(t.saved);
+    document.getElementById("statKm").textContent = fmtNum(t.totalKm) + " km";
+    document.getElementById("statKwh").textContent = fmtNum(t.totalKwh, 1) + " kWh";
+
+    const foot = document.getElementById("heroFoot");
+    if (state.charges.length === 0) {
+      foot.textContent = "Log a charge to see your real running cost.";
+    } else {
+      foot.innerHTML = "Hyundai i20 @ " + state.settings.mileage + " km/l would cost <b class='mono'>₹" + t.i20CostPerKm.toFixed(2) + "/km</b> &mdash; you're saving <b class='mono' style='color:var(--mint)'>" + fmtMoney(t.saved) + "</b> over " + fmtNum(t.totalKm) + " km.";
+    }
+    renderChart();
+  }
+
+  function getLastOdometer() {
+    const all = state.charges.map(function(c){ return {d: c.date, o: Number(c.odo)||0}; })
+      .concat(state.maintenance.map(function(m){ return {d: m.date, o: Number(m.odo)||0}; }));
+    if (all.length === 0) return 0;
+    all.sort(function(a,b){ return a.d.localeCompare(b.d); });
+    return all[all.length - 1].o;
+  }
+
+  // ---------- CHART ----------
+  function renderChart() {
+    const wrap = document.getElementById("chartWrap");
+    const sorted = computeTrips();
+    if (sorted.length === 0) {
+      wrap.innerHTML = '<div class="empty-state"><div class="icon">📈</div><p>Your savings curve will show up here<br>once you log a few charges.</p></div>';
+      return;
+    }
+    const i20Rate = state.settings.petrolPrice / state.settings.mileage;
+    let cumKm = 0, cumSpent = 0, cumSaved = 0;
+    const points = sorted.map(function(c) {
+      cumKm += Number(c.trip) || 0;
+      cumSpent += Number(c.cost) || 0;
+      cumSaved = (cumKm * i20Rate) - cumSpent;
+      return cumSaved;
+    });
+    const W = 600, H = 200, pad = 8;
+    const maxV = Math.max.apply(null, points.concat([0]));
+    const minV = Math.min.apply(null, points.concat([0]));
+    const range = (maxV - minV) || 1;
+    const stepX = points.length > 1 ? (W - pad*2) / (points.length - 1) : 0;
+
+    function yFor(v) {
+      return H - pad - ((v - minV) / range) * (H - pad*2);
+    }
+
+    let path = "";
+    let area = "";
+    points.forEach(function(v, i) {
+      const x = pad + i * stepX;
+      const y = yFor(v);
+      path += (i === 0 ? "M" : "L") + x.toFixed(1) + "," + y.toFixed(1) + " ";
+      area += (i === 0 ? "M" : "L") + x.toFixed(1) + "," + y.toFixed(1) + " ";
+    });
+    const lastX = pad + (points.length - 1) * stepX;
+    area += "L" + lastX.toFixed(1) + "," + (H-pad).toFixed(1) + " L" + pad + "," + (H-pad).toFixed(1) + " Z";
+
+    const zeroY = yFor(0).toFixed(1);
+    const accent = getComputedStyle(document.body).getPropertyValue("--mint").trim() || "#5EE6A8";
+
+    const svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
+      '<defs><linearGradient id="gradFill" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%" stop-color="' + accent + '" stop-opacity="0.25"/>' +
+      '<stop offset="100%" stop-color="' + accent + '" stop-opacity="0"/>' +
+      '</linearGradient></defs>' +
+      '<line x1="0" y1="' + zeroY + '" x2="' + W + '" y2="' + zeroY + '" stroke="currentColor" stroke-opacity="0.15" stroke-width="1" stroke-dasharray="4 4"/>' +
+      '<path d="' + area + '" fill="url(#gradFill)"/>' +
+      '<path d="' + path + '" fill="none" stroke="' + accent + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '</svg>';
+    wrap.innerHTML = svg;
+    wrap.style.color = getComputedStyle(document.body).color;
+  }
+
+  // ---------- CHARGES LIST ----------
+  function renderCharges() {
+    const list = document.getElementById("chargesList");
+    if (state.charges.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div class="icon">⚡</div><p>No charges logged yet.<br>Tap + to add your first one.</p></div>';
+      return;
+    }
+    const withTrips = computeTrips();
+    const sorted = withTrips.slice().sort(function(a,b){ return b.date.localeCompare(a.date) || b.odo - a.odo; });
+    const typeLabel = { home: "Home", dc: "DC Fast", ac: "Public AC" };
+    list.innerHTML = sorted.map(function(c) {
+      return '<div class="entry-card" data-id="' + c.id + '" data-kind="charge">' +
+        '<div class="entry-tag ' + c.type + '"></div>' +
+        '<div class="entry-main">' +
+          '<div class="entry-title">' + typeLabel[c.type] + ' &middot; ' + fmtNum(c.kwh,1) + ' kWh</div>' +
+          '<div class="entry-sub">' + formatDate(c.date) + ' &middot; ' + fmtNum(c.odo) + ' km odo &middot; ' + fmtNum(c.trip) + ' km trip</div>' +
+        '</div>' +
+        '<div class="entry-amount mono">' + fmtMoney(c.cost) + '</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  // ---------- MAINTENANCE LIST ----------
+  function renderMaint() {
+    const list = document.getElementById("maintList");
+    if (state.maintenance.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div class="icon">🔧</div><p>No maintenance logged yet.<br>Tap + to add service or tyre records.</p></div>';
+      return;
+    }
+    const sorted = state.maintenance.slice().sort(function(a,b){ return b.date.localeCompare(a.date); });
+    list.innerHTML = sorted.map(function(m) {
+      return '<div class="entry-card" data-id="' + m.id + '" data-kind="maint">' +
+        '<div class="entry-tag maint"></div>' +
+        '<div class="entry-main">' +
+          '<div class="entry-title">' + escapeHtml(m.desc || "Maintenance") + '</div>' +
+          '<div class="entry-sub">' + formatDate(m.date) + ' &middot; ' + fmtNum(m.odo) + ' km</div>' +
+        '</div>' +
+        '<div class="entry-amount mono">' + fmtMoney(m.cost) + '</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  function escapeHtml(s) {
+    return (s || "").replace(/[&<>"']/g, function(c) {
+      return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c];
+    });
+  }
+  function formatDate(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  // ---------- SETTINGS ----------
+  function renderSettings() {
+    document.getElementById("setVehicleName").value = state.settings.vehicleName;
+    document.getElementById("setBattery").value = state.settings.battery;
+    document.getElementById("setMileage").value = state.settings.mileage;
+    document.getElementById("setPetrolPrice").value = state.settings.petrolPrice;
+    document.getElementById("setStartOdo").value = state.settings.startOdo;
+  }
+  [["setVehicleName","vehicleName",false],["setBattery","battery",true],["setMileage","mileage",true],["setPetrolPrice","petrolPrice",true],["setStartOdo","startOdo",true]]
+    .forEach(function(pair) {
+      document.getElementById(pair[0]).addEventListener("change", function(e) {
+        state.settings[pair[1]] = pair[2] ? (parseFloat(e.target.value) || 0) : e.target.value;
+        save(); renderAll();
+      });
+    });
+
+  document.getElementById("exportBtn").addEventListener("click", exportCSV);
+  document.getElementById("resetBtn").addEventListener("click", function() {
+    if (confirm("This deletes all charges and maintenance records on this device. This can't be undone. Continue?")) {
+      state.charges = [];
+      state.maintenance = [];
+      save();
+      renderAll();
+      toast("All data erased");
+    }
+  });
+
+  function exportCSV() {
+    let csv = "Type,Date,Odometer,TripKM,kWh,Cost,ChargeType,Description\n";
+    const chargesWithTrips = computeTrips().sort(function(a,b){ return a.date.localeCompare(b.date); });
+    chargesWithTrips.forEach(function(c) {
+      csv += ["charge", c.date, c.odo, c.trip, c.kwh, c.cost, c.type, ""].join(",") + "\n";
+    });
+    state.maintenance.slice().sort(function(a,b){ return a.date.localeCompare(b.date); }).forEach(function(m) {
+      csv += ["maintenance", m.date, m.odo, "", "", m.cost, "", '"' + (m.desc||"").replace(/"/g,'""') + '"'].join(",") + "\n";
+    });
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "evledger_export_" + new Date().toISOString().slice(0,10) + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast("CSV downloaded");
+  }
+
+  // ---------- CHARGE SHEET ----------
+  const chargeSheet = document.getElementById("chargeSheet");
+  const chargeBackdrop = document.getElementById("chargeBackdrop");
+  let chargeType = "home";
+
+  // Finds the odometer reading of the charge immediately before this one chronologically,
+  // excluding the entry currently being edited. Falls back to settings.startOdo.
+  function getPrevOdoForDate(dateStr, excludeId) {
+    const others = state.charges.filter(function(c) { return c.id !== excludeId; });
+    const before = others.filter(function(c) { return c.date <= dateStr; })
+      .sort(function(a,b) { return a.date.localeCompare(b.date) || a.odo - b.odo; });
+    if (before.length === 0) return Number(state.settings.startOdo) || 0;
+    return Number(before[before.length - 1].odo) || 0;
+  }
+  // Finds the next entry chronologically after this one, to make sure edits don't break later trips.
+  function getNextOdoForDate(dateStr, excludeId) {
+    const others = state.charges.filter(function(c) { return c.id !== excludeId; });
+    const after = others.filter(function(c) { return c.date > dateStr; })
+      .sort(function(a,b) { return a.date.localeCompare(b.date) || a.odo - b.odo; });
+    if (after.length === 0) return null;
+    return Number(after[0].odo) || 0;
+  }
+
+  function updateTripPreview() {
+    const date = document.getElementById("chargeDate").value;
+    const odo = parseFloat(document.getElementById("chargeOdo").value);
+    const editId = document.getElementById("chargeEditId").value;
+    const errBox = document.getElementById("chargeOdoError");
+    const previewField = document.getElementById("chargeTripPreviewField");
+    const preview = document.getElementById("chargeTripPreview");
+    errBox.style.display = "none";
+    errBox.textContent = "";
+
+    if (!date || isNaN(odo)) {
+      previewField.style.display = "none";
+      return;
+    }
+    const prevOdo = getPrevOdoForDate(date, editId);
+    const nextOdo = getNextOdoForDate(date, editId);
+    previewField.style.display = "block";
+
+    if (odo < prevOdo) {
+      preview.textContent = "—";
+      preview.style.color = "var(--red)";
+      errBox.style.display = "block";
+      errBox.textContent = "Odometer (" + odo + ") is lower than your previous entry (" + prevOdo + " km). Check the reading.";
+      return;
+    }
+    if (nextOdo !== null && odo > nextOdo) {
+      preview.textContent = "—";
+      preview.style.color = "var(--red)";
+      errBox.style.display = "block";
+      errBox.textContent = "Odometer (" + odo + ") is higher than a later entry (" + nextOdo + " km). Check the date or reading.";
+      return;
+    }
+    preview.style.color = "var(--mint)";
+    preview.textContent = fmtNum(odo - prevOdo) + " km";
+  }
+  document.getElementById("chargeOdo").addEventListener("input", updateTripPreview);
+  document.getElementById("chargeDate").addEventListener("change", updateTripPreview);
+
+  function openChargeSheet(editId) {
+    document.getElementById("chargeEditId").value = editId || "";
+    const isEdit = !!editId;
+    document.getElementById("chargeSheetTitle").textContent = isEdit ? "Edit charge" : "Add charge";
+    document.getElementById("chargeDeleteBtn").style.display = isEdit ? "block" : "none";
+
+    if (isEdit) {
+      const c = state.charges.find(function(x){ return x.id === editId; });
+      chargeType = c.type;
+      document.getElementById("chargeDate").value = c.date;
+      document.getElementById("chargeOdo").value = c.odo;
+      document.getElementById("chargeKwh").value = c.kwh;
+      document.getElementById("chargeCost").value = c.cost;
+    } else {
+      chargeType = "home";
+      document.getElementById("chargeDate").value = new Date().toISOString().slice(0,10);
+      document.getElementById("chargeOdo").value = "";
+      document.getElementById("chargeKwh").value = "";
+      document.getElementById("chargeCost").value = "";
+    }
+    updateTypePills();
+    updateTripPreview();
+    chargeBackdrop.classList.add("open");
+    chargeSheet.classList.add("open");
+  }
+  function closeChargeSheet() {
+    chargeSheet.classList.remove("open");
+    chargeBackdrop.classList.remove("open");
+  }
+  function updateTypePills() {
+    document.querySelectorAll("#chargeTypePills .type-pill").forEach(function(p) {
+      p.classList.toggle("selected", p.getAttribute("data-type") === chargeType);
+    });
+  }
+  document.querySelectorAll("#chargeTypePills .type-pill").forEach(function(p) {
+    p.addEventListener("click", function() { chargeType = p.getAttribute("data-type"); updateTypePills(); });
+  });
+
+  document.getElementById("addChargeBtn").addEventListener("click", function() { openChargeSheet(null); });
+  document.getElementById("chargeCancelBtn").addEventListener("click", closeChargeSheet);
+  chargeBackdrop.addEventListener("click", closeChargeSheet);
+
+  document.getElementById("chargeSaveBtn").addEventListener("click", function() {
+    const id = document.getElementById("chargeEditId").value;
+    const date = document.getElementById("chargeDate").value;
+    const odo = parseFloat(document.getElementById("chargeOdo").value);
+    const kwh = parseFloat(document.getElementById("chargeKwh").value) || 0;
+    const cost = parseFloat(document.getElementById("chargeCost").value) || 0;
+
+    if (!date || isNaN(odo) || cost <= 0) {
+      toast("Add date, odometer and cost");
+      return;
+    }
+    const prevOdo = getPrevOdoForDate(date, id);
+    const nextOdo = getNextOdoForDate(date, id);
+    if (odo < prevOdo) {
+      toast("Odometer is lower than your previous entry");
+      return;
+    }
+    if (nextOdo !== null && odo > nextOdo) {
+      toast("Odometer is higher than a later entry");
+      return;
+    }
+
+    if (id) {
+      const c = state.charges.find(function(x){ return x.id === id; });
+      Object.assign(c, { date, odo, kwh, cost, type: chargeType });
+      toast("Charge updated");
+    } else {
+      state.charges.push({ id: uid(), date, odo, kwh, cost, type: chargeType });
+      toast("Charge saved");
+    }
+    save();
+    closeChargeSheet();
+    renderAll();
+  });
+  document.getElementById("chargeDeleteBtn").addEventListener("click", function() {
+    const id = document.getElementById("chargeEditId").value;
+    state.charges = state.charges.filter(function(x){ return x.id !== id; });
+    save();
+    closeChargeSheet();
+    renderAll();
+    toast("Charge deleted");
+  });
+
+  document.getElementById("chargesList").addEventListener("click", function(e) {
+    const card = e.target.closest(".entry-card");
+    if (card) openChargeSheet(card.getAttribute("data-id"));
+  });
+
+  // ---------- MAINTENANCE SHEET ----------
+  const maintSheet = document.getElementById("maintSheet");
+  const maintBackdrop = document.getElementById("maintBackdrop");
+
+  function openMaintSheet(editId) {
+    document.getElementById("maintEditId").value = editId || "";
+    const isEdit = !!editId;
+    document.getElementById("maintSheetTitle").textContent = isEdit ? "Edit maintenance" : "Add maintenance";
+    document.getElementById("maintDeleteBtn").style.display = isEdit ? "block" : "none";
+
+    if (isEdit) {
+      const m = state.maintenance.find(function(x){ return x.id === editId; });
+      document.getElementById("maintDate").value = m.date;
+      document.getElementById("maintOdo").value = m.odo;
+      document.getElementById("maintDesc").value = m.desc;
+      document.getElementById("maintCost").value = m.cost;
+    } else {
+      document.getElementById("maintDate").value = new Date().toISOString().slice(0,10);
+      document.getElementById("maintOdo").value = "";
+      document.getElementById("maintDesc").value = "";
+      document.getElementById("maintCost").value = "";
+    }
+    maintBackdrop.classList.add("open");
+    maintSheet.classList.add("open");
+  }
+  function closeMaintSheet() {
+    maintSheet.classList.remove("open");
+    maintBackdrop.classList.remove("open");
+  }
+  document.getElementById("addMaintBtn").addEventListener("click", function() { openMaintSheet(null); });
+  document.getElementById("maintCancelBtn").addEventListener("click", closeMaintSheet);
+  maintBackdrop.addEventListener("click", closeMaintSheet);
+
+  document.getElementById("maintSaveBtn").addEventListener("click", function() {
+    const id = document.getElementById("maintEditId").value;
+    const date = document.getElementById("maintDate").value;
+    const odo = parseFloat(document.getElementById("maintOdo").value) || 0;
+    const desc = document.getElementById("maintDesc").value.trim();
+    const cost = parseFloat(document.getElementById("maintCost").value) || 0;
+    if (!date || !desc) {
+      toast("Add date and description");
+      return;
+    }
+    if (id) {
+      const m = state.maintenance.find(function(x){ return x.id === id; });
+      Object.assign(m, { date, odo, desc, cost });
+      toast("Record updated");
+    } else {
+      state.maintenance.push({ id: uid(), date, odo, desc, cost });
+      toast("Record saved");
+    }
+    save();
+    closeMaintSheet();
+    renderAll();
+  });
+  document.getElementById("maintDeleteBtn").addEventListener("click", function() {
+    const id = document.getElementById("maintEditId").value;
+    state.maintenance = state.maintenance.filter(function(x){ return x.id !== id; });
+    save();
+    closeMaintSheet();
+    renderAll();
+    toast("Record deleted");
+  });
+  document.getElementById("maintList").addEventListener("click", function(e) {
+    const card = e.target.closest(".entry-card");
+    if (card) openMaintSheet(card.getAttribute("data-id"));
+  });
+
+  // ---------- INIT ----------
+  function renderAll() {
+    renderDashboard();
+    renderCharges();
+    renderMaint();
+  }
+  applyTheme();
+  renderAll();
+})();
+</script>
+</body>
+</html>
